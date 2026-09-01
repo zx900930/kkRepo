@@ -121,6 +121,16 @@ credential，也不提供 HTTP 服务；scanner 对同一卷只有只读权限�
 5 分钟做一次到期检查，成功更新最短间隔仍为 6 小时；争抢发布锁超过 10 分钟会失败
 退出并由 restart policy 重试。
 
+如需使用内部 HTTPS Grype 数据库镜像，请设置 `KKREPO_SCANNER_DB_UPDATE_URL`，并通过
+`KKREPO_SCANNER_DB_CA_CERT_FILE` 提供 CA 证书文件。updater 会把宿主机文件只读挂载到
+`/etc/kkrepo-ca/ca.crt`，同时设置 `KKREPO_SCANNER_DB_CA_CERT=/etc/kkrepo-ca/ca.crt`。例如：
+
+```bash
+export KKREPO_SCANNER_DB_UPDATE_URL=https://192.168.1.100/grype-db
+export KKREPO_SCANNER_DB_CA_CERT_FILE=/path/to/mirror-ca.crt
+export KKREPO_SCANNER_DB_CA_CERT=/etc/kkrepo-ca/ca.crt
+```
+
 检查容器和 scanner readiness：
 
 ```bash
@@ -485,6 +495,9 @@ Waivers 页签用于查看 Active/Expired、scope、仓库、制品、exception�
 | `KKREPO_SCANNER_DATABASE_UPDATE_ONLY` | `false` | 只执行一次协调更新后退出，不创建需要 credential 的 HTTP controller；供独立 updater 使用 |
 | `KKREPO_SCANNER_DATABASE_UPDATE_LOCK_TIMEOUT` | `10m` | updater 获取跨进程发布锁的总上限；超时进程失败以触发重试 |
 | `KKREPO_SCANNER_DB_DIRECTORY` | `/var/lib/kkrepo-scanner/grype` | 不可变 Grype 数据库代际的共享根目录；服务容器只读挂载 |
+| `KKREPO_SCANNER_DB_UPDATE_URL` | Grype 默认地址 | 可选的数据库列表和压缩包镜像地址 |
+| `KKREPO_SCANNER_DB_CA_CERT` | 空 | updater 容器内 CA 证书路径 |
+| `KKREPO_SCANNER_DB_CA_CERT_FILE` | Compose 为 `/dev/null` | Compose 只读挂载到 `/etc/kkrepo-ca/ca.crt` 的宿主机文件路径 |
 | `KKREPO_SCANNER_DB_UPDATE_INTERVAL` | `6h` | 目标更新间隔 |
 | `KKREPO_SCANNER_DB_UPDATE_CHECK_INTERVAL` | `1m` | 更新资格检查间隔 |
 | `KKREPO_SCANNER_MAX_CONCURRENT_SCANS` | `2` | 单 Pod 并发扫描上限 |

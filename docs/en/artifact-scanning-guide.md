@@ -135,6 +135,16 @@ volume read-only. It checks every five minutes by default while preserving the s
 successful-update interval. Publication-lock contention beyond ten minutes exits unsuccessfully
 so the restart policy retries.
 
+To use an internal HTTPS Grype database mirror, set `KKREPO_SCANNER_DB_UPDATE_URL` and provide the
+CA certificate file through `KKREPO_SCANNER_DB_CA_CERT_FILE`. The updater mounts that host file at
+`/etc/kkrepo-ca/ca.crt`; set `KKREPO_SCANNER_DB_CA_CERT=/etc/kkrepo-ca/ca.crt`. For example:
+
+```bash
+export KKREPO_SCANNER_DB_UPDATE_URL=https://192.168.1.100/grype-db
+export KKREPO_SCANNER_DB_CA_CERT_FILE=/path/to/mirror-ca.crt
+export KKREPO_SCANNER_DB_CA_CERT=/etc/kkrepo-ca/ca.crt
+```
+
 Check the containers and scanner readiness:
 
 ```bash
@@ -531,6 +541,9 @@ and OCI registry URL.
 | `KKREPO_SCANNER_DATABASE_UPDATE_ONLY` | `false` | Run one coordinated update and exit without creating the credential-protected HTTP controller; used by the dedicated updater |
 | `KKREPO_SCANNER_DATABASE_UPDATE_LOCK_TIMEOUT` | `10m` | Total bound for acquiring the cross-process publication lock; timeout fails the process so orchestration retries |
 | `KKREPO_SCANNER_DB_DIRECTORY` | `/var/lib/kkrepo-scanner/grype` | Shared root for immutable Grype database generations; serving containers mount it read-only |
+| `KKREPO_SCANNER_DB_UPDATE_URL` | Grype default | Optional database listing and archive mirror URL |
+| `KKREPO_SCANNER_DB_CA_CERT` | Empty | Optional CA certificate path inside the updater container |
+| `KKREPO_SCANNER_DB_CA_CERT_FILE` | `/dev/null` (Compose) | Compose host path mounted read-only at `/etc/kkrepo-ca/ca.crt` |
 | `KKREPO_SCANNER_DB_UPDATE_INTERVAL` | `6h` | Target update interval |
 | `KKREPO_SCANNER_DB_UPDATE_CHECK_INTERVAL` | `1m` | Update-eligibility check interval |
 | `KKREPO_SCANNER_MAX_CONCURRENT_SCANS` | `2` | Active scans per Pod |

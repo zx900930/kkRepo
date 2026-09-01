@@ -124,11 +124,17 @@ services:
       KKREPO_SCANNER_DATABASE_UPDATE_LOCK_TIMEOUT: ${KKREPO_SCANNER_DATABASE_UPDATE_LOCK_TIMEOUT:-10m}
       KKREPO_SCANNER_DB_UPDATE_CHECK_SECONDS: ${KKREPO_SCANNER_DB_UPDATE_CHECK_SECONDS:-300}
       KKREPO_SCANNER_DB_DIRECTORY: /var/lib/kkrepo-scanner/grype
+      KKREPO_SCANNER_DB_UPDATE_URL: ${KKREPO_SCANNER_DB_UPDATE_URL:-}
+      KKREPO_SCANNER_DB_CA_CERT: ${KKREPO_SCANNER_DB_CA_CERT:-}
     read_only: true
     tmpfs:
       - /tmp:size=${KKREPO_SCANNER_UPDATER_TMPFS_SIZE:-1g},uid=10001,gid=10001,mode=1770
     volumes:
       - scanner-db:/var/lib/kkrepo-scanner/grype
+      - type: bind
+        source: ${KKREPO_SCANNER_DB_CA_CERT_FILE:-/dev/null}
+        target: /etc/kkrepo-ca/ca.crt
+        read_only: true
     security_opt:
       - no-new-privileges:true
     cap_drop:

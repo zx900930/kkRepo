@@ -5,7 +5,9 @@ repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 rendered="$(mktemp)"
 disabled_error="$(mktemp)"
 preloaded="$(mktemp)"
-trap 'rm -f "$rendered" "$disabled_error" "$preloaded"' EXIT
+mirror_rendered="$(mktemp)"
+no_cidr_rendered="$(mktemp)"
+trap 'rm -f "$rendered" "$disabled_error" "$preloaded" "$mirror_rendered" "$no_cidr_rendered"' EXIT
 
 helm template security-check "$repository_root/deploy/helm/kkrepo" \
   --set securityScanning.enabled=true \
@@ -14,6 +16,7 @@ helm template security-check "$repository_root/deploy/helm/kkrepo" \
 
 document_with() {
   local needle="$1"
+  local input="${2:-$rendered}"
   awk -v needle="$needle" '
     function flush() {
       if (found) {
@@ -31,7 +34,7 @@ document_with() {
       if (normalized == needle) found = 1
     }
     END { flush() }
-  ' "$rendered"
+  ' "$input"
 }
 
 scanner_statefulset="$(document_with "kind: StatefulSet")"
@@ -89,6 +92,36 @@ helm template security-check "$repository_root/deploy/helm/kkrepo" \
   --set securityScanning.scannerDatabase.autoUpdate=false \
   --set securityScanning.scannerDatabase.persistence.existingClaim=preloaded-scanner-db \
   >"$preloaded"
+
+helm template security-check "$repository_root/deploy/helm/kkrepo" \
+  --set securityScanning.enabled=true \
+  --set securityScanning.serviceCredential.existingSecret=kkrepo-scanner \
+  --set securityScanning.scannerDatabase.updateUrl=https://192.168.1.100/grype-db \
+  --set securityScanning.scannerDatabase.caCert.existingSecret=grype-mirror-ca \
+  --set securityScanning.scannerDatabase.caCert.key=ca.crt \
+  --set securityScanning.networkPolicy.databaseMirror.enabled=true \
+  --set securityScanning.networkPolicy.databaseMirror.cidr=192.168.1.100/32 \
+  >"$mirror_rendered"
+
+mirror_updater_cronjob="$(document_with "kind: CronJob" "$mirror_rendered")"
+mirror_updater_policy="$(document_with "app.kubernetes.io/component: security-scanner-db-updater" "$mirror_rendered")"
+grep -A1 -F "KKREPO_SCANNER_DB_UPDATE_URL" <<<"$mirror_updater_cronjob" \
+  | grep -Fq 'https://192.168.1.100/grype-db'
+grep -A1 -F "KKREPO_SCANNER_DB_CA_CERT" <<<"$mirror_updater_cronjob" \
+  | grep -Fq '/etc/kkrepo-ca/ca.crt'
+grep -A2 -F "name: scanner-db-ca" <<<"$mirror_updater_cronjob" \
+  | grep -Fq 'secretName: grype-mirror-ca'
+grep -Fq 'cidr: 192.168.1.100/32' <<<"$mirror_updater_policy"
+
+helm template security-check "$repository_root/deploy/helm/kkrepo" \
+  --set securityScanning.enabled=true \
+  --set securityScanning.serviceCredential.existingSecret=kkrepo-scanner \
+  --set securityScanning.networkPolicy.databaseMirror.enabled=true \
+  >"$no_cidr_rendered"
+if grep -Fq 'cidr: ""' "$no_cidr_rendered"; then
+  echo "database mirror must not render an empty CIDR rule" >&2
+  exit 1
+fi
 
 if grep -Fq "kind: CronJob" "$preloaded"; then
   echo "automatic database updater must not render when autoUpdate=false" >&2

@@ -8,6 +8,9 @@ for compose_file in \
   "$repository_root/docker-compose.quickstart-postgresql.yml"; do
   rendered="$(mktemp)"
   trap 'rm -f "$rendered"' EXIT
+  KKREPO_SCANNER_DB_UPDATE_URL=https://192.168.1.100/grype-db \
+  KKREPO_SCANNER_DB_CA_CERT=/etc/kkrepo-ca/ca.crt \
+  KKREPO_SCANNER_DB_CA_CERT_FILE=/dev/null \
   docker compose \
     -f "$compose_file" \
     --profile security-scanning \
@@ -39,6 +42,8 @@ assert "KKREPO_SCANNER_SERVICE_CREDENTIAL" not in updater["environment"], source
 assert updater["environment"]["KKREPO_SCANNER_DATABASE_UPDATE_ONLY"] == "true", source
 assert updater["environment"]["KKREPO_SCANNER_DB_AUTO_UPDATE"] == "false", source
 assert updater["environment"]["KKREPO_SCANNER_DATABASE_UPDATE_LOCK_TIMEOUT"] == "10m", source
+assert updater["environment"]["KKREPO_SCANNER_DB_UPDATE_URL"] == "https://192.168.1.100/grype-db", source
+assert updater["environment"]["KKREPO_SCANNER_DB_CA_CERT"] == "/etc/kkrepo-ca/ca.crt", source
 assert set(updater["networks"]) == {"scanner-update-egress"}, source
 assert "scanner-update-egress" not in application["networks"], source
 assert set(application["networks"]) == {
@@ -58,6 +63,14 @@ updater_volume = mounted_volume(updater)
 assert scanner_volume["source"] == updater_volume["source"], source
 assert scanner_volume["read_only"] is True, source
 assert updater_volume.get("read_only", False) is False, source
+
+ca_volume = next(
+    (volume for volume in updater["volumes"] if volume["target"] == "/etc/kkrepo-ca/ca.crt"),
+    None,
+)
+assert ca_volume is not None, source
+assert ca_volume["source"] == "/dev/null", source
+assert ca_volume["read_only"] is True, source
 PY
   rm -f "$rendered"
   trap - EXIT
