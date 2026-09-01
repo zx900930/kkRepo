@@ -121,14 +121,14 @@ credential，也不提供 HTTP 服务；scanner 对同一卷只有只读权限�
 5 分钟做一次到期检查，成功更新最短间隔仍为 6 小时；争抢发布锁超过 10 分钟会失败
 退出并由 restart policy 重试。
 
-如需使用内部 HTTPS Grype 数据库镜像，请设置 `KKREPO_SCANNER_DB_UPDATE_URL`，并通过
-`KKREPO_SCANNER_DB_CA_CERT_FILE` 提供 CA 证书文件。updater 会把宿主机文件只读挂载到
-`/etc/kkrepo-ca/ca.crt`，同时设置 `KKREPO_SCANNER_DB_CA_CERT=/etc/kkrepo-ca/ca.crt`。例如：
+Compose updater 默认使用 `https://grype.anchore.io/databases`。如需使用内部 HTTPS Grype
+数据库镜像，请设置 `KKREPO_SCANNER_DB_UPDATE_URL`，并在所用 Compose 文件中同时取消 CA
+环境变量和 CA volume 配置的注释。通过 `KKREPO_SCANNER_DB_CA_CERT_FILE` 设置宿主机证书路径；
+updater 会把它只读挂载到 `/etc/kkrepo-ca/ca.crt`。
 
 ```bash
 export KKREPO_SCANNER_DB_UPDATE_URL=https://192.168.1.100/grype-db
 export KKREPO_SCANNER_DB_CA_CERT_FILE=/path/to/mirror-ca.crt
-export KKREPO_SCANNER_DB_CA_CERT=/etc/kkrepo-ca/ca.crt
 ```
 
 检查容器和 scanner readiness：

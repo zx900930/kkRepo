@@ -135,14 +135,14 @@ volume read-only. It checks every five minutes by default while preserving the s
 successful-update interval. Publication-lock contention beyond ten minutes exits unsuccessfully
 so the restart policy retries.
 
-To use an internal HTTPS Grype database mirror, set `KKREPO_SCANNER_DB_UPDATE_URL` and provide the
-CA certificate file through `KKREPO_SCANNER_DB_CA_CERT_FILE`. The updater mounts that host file at
-`/etc/kkrepo-ca/ca.crt`; set `KKREPO_SCANNER_DB_CA_CERT=/etc/kkrepo-ca/ca.crt`. For example:
+The Compose updater uses `https://grype.anchore.io/databases` by default. To use an internal HTTPS
+Grype database mirror, set `KKREPO_SCANNER_DB_UPDATE_URL` and uncomment the optional CA environment
+and volume entries in the selected Compose file. Set the CA host path with
+`KKREPO_SCANNER_DB_CA_CERT_FILE`; the updater mounts it at `/etc/kkrepo-ca/ca.crt`.
 
 ```bash
 export KKREPO_SCANNER_DB_UPDATE_URL=https://192.168.1.100/grype-db
 export KKREPO_SCANNER_DB_CA_CERT_FILE=/path/to/mirror-ca.crt
-export KKREPO_SCANNER_DB_CA_CERT=/etc/kkrepo-ca/ca.crt
 ```
 
 Check the containers and scanner readiness:
