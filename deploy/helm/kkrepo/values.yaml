@@ -194,6 +194,12 @@ securityScanning:
         kubernetes.io/metadata.name: kube-system
       podSelector:
         k8s-app: kube-dns
+    # Optional explicit egress for a private HTTPS database mirror. The rule is rendered only when
+    # both enabled and cidr are set.
+    databaseMirror:
+      enabled: false
+      cidr: ""
+      port: 443
 
 resources:
   requests:

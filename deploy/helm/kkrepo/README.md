@@ -50,6 +50,9 @@ helm upgrade --install kkrepo deploy/helm/kkrepo \
 
 Leave `updateUrl` empty to retain Grype's default database endpoint.
 
+The optional `databaseMirror` egress rule is rendered only when both `enabled` and `cidr` are set.
+Leaving `cidr` empty does not add an empty rule or change the other NetworkPolicy egress rules.
+
 The scanner NetworkPolicy permits DNS only to pods selected by
 `securityScanning.networkPolicy.dns`. Its defaults target `kube-dns` in `kube-system`; override
 both selectors for clusters that label the DNS workload differently. Empty selectors are rejected
